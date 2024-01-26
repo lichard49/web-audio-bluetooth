@@ -5,9 +5,11 @@
     <script src="https://cdn.plot.ly/plotly-2.27.0.min.js" charset="utf-8"></script>
     <script src="https://unpkg.com/tone"></script>
     <script src="https://cdn.canvasjs.com/canvasjs.min.js"></script>
-    <script src="serial.js"></script>
-    <script src="test_sound.js"></script>
-    <script src="decode.js"></script>
+
+    <script src="js/CONSTANTS.js"></script>
+    <script src="js/serial.js"></script>
+    <script src="js/test_sound.js"></script>
+    <script src="js/decode.js"></script>
   </head>
 
   <body>
@@ -24,6 +26,7 @@
       <button onclick = "pauseSerial()">pause Serial</button>
       <button onclick = "makelongsound()">long noise</button>
       <button onclick = "stop()">stops "long noise"</button>
+      <button onclick = "outputTest()"> output test</button>
       <button onclick = "playMessage([-10, -10, -10])">different volumes</button>
       <button onclick = "testPlay(-20, 20)">Record burst</button> 
       <button onclick = "startRecord()">record</button>

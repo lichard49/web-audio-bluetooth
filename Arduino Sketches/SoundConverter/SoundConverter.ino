@@ -3,7 +3,7 @@
 //constants
 const double detectionSwitch = 10.0;
 const int detectLength = 20;
-const uint16_t ampAdjust = 244;
+const uint16_t ampAdjust = 246;
 
 //global variables
 uint16_t detectionBuffer[detectLength];
@@ -104,15 +104,15 @@ double rmsCalc(uint16_t buffer[], int size) {
 }
 
 char decode(double value) {
-  if(value > 100) return 'k';
+  if(value > 96) return ' ';
   else if(value > 88) return 'j';
-  else if(value > 80) return 'i';
+  else if(value > 78) return 'i';
   else if(value > 70) return 'h';
-  else if(value > 65) return 'g';
-  else if(value > 59) return 'f';
-  else if(value > 52) return 'e';
-  else if(value > 46) return 'd';
-  else if(value > 42) return 'c';
+  else if(value > 64) return 'g';
+  else if(value > 56) return 'f';
+  else if(value > 50) return 'e';
+  else if(value > 45) return 'd';
+  else if(value > 39) return 'c';
   else if(value > 35) return 'b';
   else if(value > 28) return 'a';
 }
