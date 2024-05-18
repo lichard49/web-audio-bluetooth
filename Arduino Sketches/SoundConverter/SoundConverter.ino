@@ -3,7 +3,7 @@
 //constants
 const double detectionSwitch = 10.0;
 const int detectLength = 20;
-const uint16_t ampAdjust = 246;
+const uint16_t ampAdjust = 242;
 
 //global variables
 uint16_t detectionBuffer[detectLength];
@@ -26,11 +26,12 @@ void setup() {
 
 void loop() {
   // read the analog / millivolts value for pin 2:
-  uint16_t analogValue = analogRead(A2);
+  uint16_t analogValue = analogRead(A0);
 
   if(analogValue > 10) decipher(analogValue);
-  else resetDecipher();
-
+  else {
+    resetDecipher();
+  }
   char str[6];
   sprintf(str, "%04d\n", analogValue);
   Serial.print(str);
@@ -85,7 +86,7 @@ void decipher(uint16_t soundVal) {
         decodeTotal += abs(diff);
         decodeSize++;
       } else {
-        Serial.println("overflow");
+        resetDecipher();
       }
     }
   } 
@@ -104,15 +105,16 @@ double rmsCalc(uint16_t buffer[], int size) {
 }
 
 char decode(double value) {
-  if(value > 96) return ' ';
-  else if(value > 88) return 'j';
-  else if(value > 78) return 'i';
-  else if(value > 70) return 'h';
-  else if(value > 64) return 'g';
-  else if(value > 56) return 'f';
-  else if(value > 50) return 'e';
-  else if(value > 45) return 'd';
-  else if(value > 39) return 'c';
-  else if(value > 35) return 'b';
-  else if(value > 28) return 'a';
+  if(value >= 124) return ' ';
+  else if(value >= 110) return 'j';
+  else if(value >= 98) return 'i';
+  else if(value >= 86) return 'h';
+  else if(value >= 78) return 'g';
+  else if(value >= 69) return 'f';
+  else if(value >= 62) return 'e';
+  else if(value >= 54) return 'd';
+  else if(value >= 49) return 'c';
+  else if(value >= 44) return 'b';
+  else if(value >= 38) return 'a';
+  else return '?';
 }

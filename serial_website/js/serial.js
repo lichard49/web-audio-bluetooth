@@ -7,7 +7,7 @@
 
 "use strict";
 
-// controls flow of audio data
+// controls flow of input audio data
 let recording = false;
 let plotting = false;
 let analyzing = false;
@@ -27,10 +27,16 @@ let tableData = [];
 // stores actual output from microcontroller
 let output_letters = [];
 
+// diff checker strings
+let input_text= "";
+let output_text = "";
+
+
 window.addEventListener("load", init);
 
 // Opens web serial connection on load
 function init() {
+    //initialize some buttons and things
     document.querySelector("#connect").addEventListener('click', async () => {
         const port = await navigator.serial.requestPort();
         try {
@@ -67,6 +73,9 @@ function init() {
             }
         }
     });
+
+    // initialize input and output for diff
+    input_output_support();
 }
 
 // value handling function
@@ -75,10 +84,14 @@ function processValue(value) {
 
     // microcontroller is outputting a letter
     if(isNaN(val)) {
-        console.log(`microcontroller output: ${value}`);
+        if(!output_testing) {
+            console.log("microcontroller output: " + value);
+        }
         if(output_testing) {
             // adds value with no special characters
             output_letters.push(value.replace(/[^a-zA-Z0-9 ]/g, ''));
+            timer = new Date()
+            sound_end_time.push(timer.getTime())
         }
     } 
     
@@ -198,7 +211,7 @@ function showAnalysis() {
     document.getElementById("dataAnalysis").style.visibility = "visible";
 
     let csv = csvMaker(tableData);
-    download(csv);
+    download(csv, 'serialAnalysis.csv');
 
     let snrAnalysis = document.getElementById("snrAnalysis");
     Plotly.newPlot(snrAnalysis, [{
@@ -307,6 +320,56 @@ function record(value) {
     }
 }
 
+function input_output_support() {
+    readById('inputfile');
+    readById('outputfile');
+}
+
+function readById(id) {
+    document.getElementById(id).addEventListener('change', function () {
+        let fr = new FileReader();
+        fr.onload = function () {
+            let text = fr.result;
+            text = text.replace(/,?\r?/gm, "");
+
+            output_text = (id === "outputfile") ? text : output_text;
+            input_text = (id === "inputfile") ? text : input_text;
+            if(output_text !== "" && input_text !== "") {
+                checkDiff(input_text, output_text);
+            }
+        }
+        
+        fr.readAsText(this.files[0]);
+    });
+}
+
+function checkDiff(a, b) {
+    const div = document.getElementById("diff");
+    const para = document.createElement('p');
+    div.appendChild(para);
+    const diff = Diff.diffChars(a, b);
+
+    let added = 0;
+    let deleted = 0;
+
+    diff.forEach((part) => {
+        // green for additions, red for deletions
+        // grey for common parts
+        const color = part.added ? 'green' :
+          part.removed ? 'red' : 'grey';
+        const span = document.createElement('span');
+        span.style.color = color;
+        span.appendChild(document
+          .createTextNode(part.value));
+        div.appendChild(span);
+
+        added += part.added ? part.value.replace(/\n/g, "").length : 0;
+        deleted += part.removed ? part.value.replace(/\n/g, "").length : 0;
+    });
+
+    para.textContent = `added ${added} chars removed ${deleted} chars\n`;
+}
+
 // helper function that returns a csv formatted string given
 // given an array of data
 function csvMaker(data) {  
@@ -381,7 +444,7 @@ async function* CSVIterator(fileURL) {
 }
 
 // given a csv formatted string downloads it to your computer
-function download(data) { 
+function download(data, fileName) { 
   
     // Creating a Blob for having a csv file format  
     // and passing the data with type 
@@ -398,7 +461,7 @@ function download(data) {
   
     // Setting the anchor tag attribute for downloading 
     // and passing the download file name 
-    a.setAttribute('download', 'serialAnalysis.csv'); 
+    a.setAttribute('download', fileName); 
   
     // Performing a download with click 
     a.click() 

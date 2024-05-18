@@ -1,0 +1,6 @@
+{
+  "dependencies": {
+    "client-zip": "^2.4.4",
+    "diff": "^5.2.0"
+  }
+}

@@ -5,11 +5,13 @@
     <script src="https://cdn.plot.ly/plotly-2.27.0.min.js" charset="utf-8"></script>
     <script src="https://unpkg.com/tone"></script>
     <script src="https://cdn.canvasjs.com/canvasjs.min.js"></script>
+    <script src="node_modules/diff/dist/diff.js"></script>
+    <script src="node_modules/client-zip/worker.js"></script>
 
     <script src="js/CONSTANTS.js"></script>
     <script src="js/serial.js"></script>
-    <script src="js/test_sound.js"></script>
     <script src="js/decode.js"></script>
+    <script src="js/test_sound.js"></script>
   </head>
 
   <body>
@@ -26,13 +28,13 @@
       <button onclick = "pauseSerial()">pause Serial</button>
       <button onclick = "makelongsound()">long noise</button>
       <button onclick = "stop()">stops "long noise"</button>
-      <button onclick = "outputTest()"> output test</button>
+      <button onclick = "num_outputTest(1)"> output test</button>
       <button onclick = "playMessage([-10, -10, -10])">different volumes</button>
       <button onclick = "testPlay(-20, 20)">Record burst</button> 
       <button onclick = "startRecord()">record</button>
       <button onclick = "stopRecord(true)">stop record</button>
       <button onclick = "calcAvgNoise()">find center</button>
-      <button onclick = "analysis(-80, 0)"> start analysis </button>
+      <button onclick = "analysis(-50, 0)"> start analysis </button>
       <div class="slider">
         <input id="myRange" type="range" min="-80" max="20" value="0">
         <div id="sliderAmount"></div>
@@ -54,9 +56,15 @@
         <div id = "rmsAnalysis" style = "width: 600px;"></div>
         <div id = "snrAnalysis" style = "width: 600px;"></div>
       </section>
-
     </section>
 
-  
+    <section id = "diffDisplay">
+      <label for="inputfile">input</label>
+      <input type="file" name="inputfile" id="inputfile">
+      <label for="outputfile">output</label>
+      <input type="file" name="outputfile" id="outputfile">
+
+      <div id="diff" style="width:600px; border: 50px;"></div>
+    </section>
   </body>
 </html>

@@ -3,7 +3,20 @@
  * Web-Audio-Bluetooth Project
  */
 
-// init Tone.js to work around browser limits
+
+// for recording and analyzing files
+let decode_files = []
+let sound_files = []
+let sound_start_time = []
+let sound_end_time = []
+
+//
+let soundIsPlaying = false;
+
+// testing values
+let time_start = 0;
+let time_end = 0;
+
 function initSound() {
   let context = (window.AudioContext || window.webkitAudioContext) ?
     new (window.AudioContext || window.webkitAudioContext)() : null;
@@ -24,6 +37,13 @@ function initSound() {
 // plays a straight drone
 function makelongsound(){
   initSound();
+
+  if(soundIsPlaying) {
+    console.log("cannot play two sounds at once");
+    return;
+  }
+
+  soundIsPlaying = true;
 
   Tone.start().then(() => {
   osc.start();
@@ -60,31 +80,77 @@ function playEncoding() {
   });
 }
 
-// using a test csv file with output letters to play compares expected output on microcontroller vs actual ouput
-async function outputTest() {
+async function num_outputTest(num) {
   const letters =  await csvConverter(window.location.origin + "/" + INPUT_TEST_PATH);
-  console.log(letters);
+  console.log("letters to decode: \n" + letters);
   const values = encodemessage(letters);
+
+  for (let i = 0; i < num; i++) {
+    console.log("starting test: " + i);
+    await outputTest(values, i);
+  }
+
+  // get the ZIP stream in a Blob
+  const blob1 = await downloadZip(sound_files).blob()
+  const blob2 = await downloadZip(decode_files).blob()
+  // make and click a temporary link to download the Blob
+  const link1 = document.createElement("a")
+  link1.href = URL.createObjectURL(blob1)
+  link1.download = "sound_files.zip"
+  link1.click()
+  link1.remove()
+  URL.revokeObjectURL(link1.href)
+
+  const link2 = document.createElement("a")
+  link2.href = URL.createObjectURL(blob2)
+  link2.download = "decode_files.zip"
+  link2.click()
+  link2.remove()
+  URL.revokeObjectURL(link2.href)
+
+  sound_files = [];
+  decode_files = [];
+
+}
+
+// using a test csv file with output letters to play compares expected output on microcontroller vs actual ouput
+async function outputTest(values, iteration) {
   output_testing = true;
+  const date = new Date();
+  startRecord();
   playMessage(values);
 
-  setTimeout(() => {
-    console.log(output_letters);
-    const csvString = ((output) => {
-      let csvString = "";
-      for(let i = 0; i < output.length - 1; i++) {
-        csvString += output[i] + ",\r\n";
-      }
+  const delay = ms => new Promise(res => setTimeout(res, ms));
+  while (soundIsPlaying) {
+    await delay(50);
+  }
 
-      csvString += output[output_letters.length - 1];
-      return csvString;
-    });
-    const csv = csvString(output_letters);
+  let record_stream = stopRecord(false);
+  output_testing = false;
+  console.log("expected end time: " + playTime(values));
+  const csvString = ((output) => {
+    let csvString = "";
+    for(let i = 0; i < output.length - 1; i++) {
+      csvString += output[i] + ",\r\n";
+    }
 
-    console.log(csv);
-    download(csv);
-    output_testing = false;
-  }, playTime(values));
+    csvString += output[output.length - 1];
+    return csvString;
+  });
+
+  // give data a chance to catch up
+  await(delay(100));
+  const letters_csv = csvString(output_letters);
+  const record_csv = csvString(record_stream);
+  const file_letters = new File([letters_csv], `file_letter_${iteration}.csv`, { type: 'text/csv' }); 
+  const file_soundstream = new File([record_csv], `file_soundstream_${iteration}.csv`, {type: 'text/csv'});
+  decode_files.push(file_letters);
+  sound_files.push(file_soundstream);
+  console.log("sound start time: " + sound_start_time)
+  console.log("sound end time: " + sound_end_time)
+  sound_start_time = []
+  sound_end_time = []
+  output_letters = [];
 }
 
 // starts an analysis loop that analyzes db levels from start to finish
@@ -100,18 +166,25 @@ function analysis(start, finish) {
     amplitudes.push(i);
   }
 
+  if (soundIsPlaying) {
+    console.log("cannot play two sounds at once");
+    return;
+  }
+
+  soundIsPlaying = true;
+
   osc.start();
   osc.mute = true;
-  setTimeout(() => {
-    analysisLoop(amplitudes, 0);
-  }, 3000);
+  analysisLoop(amplitudes, 0);
 }
 
 // if currently analyzing data uses the following loop to
 // change sounds
 function analysisLoop(amplitudes, currentAmp) {
   //init oscillator
+
   initSound();
+  soundIsPlaying = true;
   Tone.start().then(() => {
     console.log(amplitudes[currentAmp]);
     if(amplitudes[currentAmp] == SILENCE) {
@@ -131,6 +204,7 @@ function analysisLoop(amplitudes, currentAmp) {
           analysisLoop(amplitudes, currentAmp);
         } else {
           showAnalysis();
+          soundIsPlaying = false;
           osc.stop();
           analyzing = false;
         }
@@ -178,26 +252,34 @@ function playMessage(volume_list){
 
 //stops the oscillator from making any noise
 function stop() {
+  soundIsPlaying = false;
   osc.stop();
 }
 
 // given a formatted sound message plays the sound
 function arrayPlay(bufferMessage) {
   let i = 0;
+  if (soundIsPlaying) {
+    console.log("cannot play two sounds at once");
+    return;
+  }
+  soundIsPlaying = true;
   Tone.start().then(() => {
-    osc.start();
-
+      osc.start();
+      osc.mute = true;
       let myInterval = setInterval( () => {
         if(i>=bufferMessage.length){
           clearInterval(myInterval);
-          osc.stop();
+          this.stop();
         }
         else{
           if(bufferMessage[i] == SILENCE) {
             osc.mute = true;
           }
-          else if(Math.ceil(bufferMessage[i]) != osc.volume.value) {
+          else if(bufferMessage[i] != Math.round(osc.volume.value)) {
             osc.volume.value = Math.ceil(bufferMessage[i]);
+            timer = new Date()
+            sound_start_time.push(timer.getTime())
           }
           
           i++;
